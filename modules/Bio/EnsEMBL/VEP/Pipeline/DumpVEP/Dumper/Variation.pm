@@ -407,7 +407,6 @@ sub freqs_from_vcf {
       }
     }
   }
-  die "OK not worked" if $non_match;
 }
 
 # r2.1 and 3.1.2 of gnomad has changed the population names from upper to lower case.
