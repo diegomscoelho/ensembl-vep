@@ -52,7 +52,7 @@ BEGIN {
 
 use base qw(Bio::EnsEMBL::VEP::Pipeline::DumpVEP::Dumper);
 
-my $gnomad_prefix = 'gnomAD-v';
+my $gnomad_prefix = 'gnomAD';
 
 sub run {
   my $self = shift;
@@ -183,6 +183,7 @@ sub _generic_dump_info {
   );
   foreach my $pop(map {@{$_->{prefixed_pops} || $_->{pops}}} @{$self->{freq_vcf} || []}) {
     $pop = uc_gnomad_pop($pop) if ($pop =~ /^$gnomad_prefix/);
+    $pop = "AF" if $pop eq '';
     push @cols, $pop;
   }
 
@@ -317,7 +318,6 @@ sub freqs_from_vcf {
               $self->warning('Could not be added to cache ' . $v->{variation_name} . ' ' . $v->{allele_string});
               next;
             }
-            $DB::single = 1 if $v->{variation_name} eq 'TMP_ESP_1_179086420_179086420';
 
             my $matches = [];
             eval{
@@ -348,8 +348,8 @@ sub freqs_from_vcf {
                 my $info_prefix = '';
                 my $info_suffix = '';
 
-                # have to process ExAC differently from 1KG and ESP
-                if($prefix =~ /exac|gnomAD-v2|gnomAD-v3/i && $pop) {
+                # have to process gnomADe and gnomADg differently from 1KG and ESP
+                if($prefix =~ /gnomADe|gnomADg/i && $pop) {
                   $info_suffix = '_'.$pop if $pop;
                 }
                 elsif($pop) {
@@ -396,7 +396,7 @@ sub freqs_from_vcf {
 
                 if(defined($tmp_f) && $tmp_f ne '') {
                   my $store_name = $prefix;
-                  $store_name .= (($vcf_conf->{name} eq 'gnomAD-v2' || $vcf_conf->{name} eq 'gnomAD-v3') && $pop) ? uc($pop) : $pop;
+                  $store_name .= (($vcf_conf->{name} eq 'gnomADe' || $vcf_conf->{name} eq 'gnomADg') && $pop) ? uc($pop) : $pop;
                   $store_name =~ s/\_$//;
                   $v->{$store_name} = $v->{$store_name} ? $v->{$store_name}.','.$tmp_f : $tmp_f;
                 }
@@ -415,7 +415,8 @@ sub freqs_from_vcf {
 sub uc_gnomad_pop {
   my $pop = shift;
   my $ucpop = uc $pop;
-  $ucpop =~ s/GNOMAD-V/$gnomad_prefix/;
+  $ucpop =~ s/GNOMADE/${gnomad_prefix}e/;
+  $ucpop =~ s/GNOMADG/${gnomad_prefix}g/;
   return $ucpop; 
 }
 

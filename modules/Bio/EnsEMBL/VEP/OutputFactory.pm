@@ -104,11 +104,11 @@ my %DISTANCE_CONS = (upstream_gene_variant => 1, downstream_gene_variant => 1);
 
 my %FREQUENCY_KEYS = (
   af           => ['AF'],
-  af_1kg       => [qw(AFR AMR ASN EAS EUR SAS)],
+  af_1kg       => [qw(AF AFR AMR ASN EAS EUR SAS)],
   af_esp       => [qw(AA EA)],
   af_exac      => [('ExAC', map {'ExAC_'.$_} qw(Adj AFR AMR EAS FIN NFE OTH SAS))],
-  af_gnomad    => [('gnomAD-v2', map {'gnomAD-v2_'.$_} qw(AFR AMR ASJ EAS FIN NFE OTH SAS))],
-  af_gnomad_v3 => [('gnomAD-v3', map {'gnomAD-v3_'.$_} qw(AFR AMI AMR ASJ EAS FIN MID NFE OTH SAS))],
+  af_gnomade    => [('gnomADe', map {'gnomADe_'.$_} qw(AFR AMR ASJ EAS FIN NFE OTH SAS))],
+  af_gnomadg => [('gnomADg', map {'gnomADg_'.$_} qw(AFR AMI AMR ASJ EAS FIN MID NFE OTH SAS))],
 );
 
 
@@ -169,8 +169,8 @@ sub new {
     af_1kg
     af_esp
     af_exac
-    af_gnomad
-    af_gnomad_v3
+    af_gnomade
+    af_gnomadg
     max_af
     pubmed
     clin_sig_allele
@@ -1103,9 +1103,6 @@ sub add_colocated_frequency_data {
 
   my @ex_alleles = split('/', $ex->{allele_string});
 
-  # gmaf stored a bit differently, but we can get it in the same format
-  $ex->{AF} = $ex->{minor_allele}.':'.$ex->{minor_allele_freq} if $ex->{minor_allele};
-
   my @keys = keys %FREQUENCY_KEYS;
   @keys = grep {$self->{$_}} @keys unless $self->{max_af};
   
@@ -1132,6 +1129,7 @@ sub add_colocated_frequency_data {
       # get the frequencies for each allele into a hashref
       foreach my $pair(split(',', $ex->{$key})) {
         my ($a, $f) = split(':', $pair);
+        $f = sprintf("%.4f", $f) if $key eq 'AF'; # this format is just to keep old compability with dbSNP import
         $freq_data{$a} = $f;
         $total += $f;
         delete $remaining{$a} if $remaining{$a};
@@ -1164,7 +1162,7 @@ sub add_colocated_frequency_data {
 
         # update max_af data if required
         # make sure we don't include any combined-level pops
-        if($self->{max_af} && $key ne 'AF' && $key ne 'ExAC' && $key ne 'ExAC_Adj' && $key ne 'gnomAD-v2' && $key ne 'gnomAD-v3') {
+        if($self->{max_af} && $key ne 'AF' && $key ne 'ExAC' && $key ne 'ExAC_Adj' && $key ne 'gnomADe' && $key ne 'gnomADg') {
           if($f > $max_af) {
             $max_af = $f;
             @max_af_pops = ($key);
@@ -1188,8 +1186,6 @@ sub add_colocated_frequency_data {
     
     push @{$hash->{MAX_AF_POPS}}, @max_af_pops if $max_af >= $current_max;
   }
-
-  delete $ex->{AF};
 
   return $hash;
 }
